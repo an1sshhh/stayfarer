@@ -3,16 +3,28 @@ const { ApiError } = require('../../core/ApiError');
 
 async function listByRoomType(roomTypeId) {
   const ratePlans = await db('rate_plans').where({ room_type_id: roomTypeId });
+  if (!ratePlans.length) return [];
 
-  return Promise.all(
-    ratePlans.map(async (plan) => ({
-      ...plan,
-      inclusions: await db('rate_plan_inclusions').where({ rate_plan_id: plan.id }).select('id', 'label'),
-      cancellationPolicy: await db('cancellation_policies')
-        .where({ rate_plan_id: plan.id })
-        .orderBy('sort_order'),
-    }))
-  );
+  const planIds = ratePlans.map((plan) => plan.id);
+  const [inclusions, cancellationPolicies] = await Promise.all([
+    db('rate_plan_inclusions').whereIn('rate_plan_id', planIds).select('id', 'label', 'rate_plan_id'),
+    db('cancellation_policies').whereIn('rate_plan_id', planIds).orderBy('sort_order'),
+  ]);
+
+  const inclusionsByPlanId = {};
+  for (const { rate_plan_id, ...inclusion } of inclusions) {
+    (inclusionsByPlanId[rate_plan_id] ??= []).push(inclusion);
+  }
+  const policiesByPlanId = {};
+  for (const policy of cancellationPolicies) {
+    (policiesByPlanId[policy.rate_plan_id] ??= []).push(policy);
+  }
+
+  return ratePlans.map((plan) => ({
+    ...plan,
+    inclusions: inclusionsByPlanId[plan.id] || [],
+    cancellationPolicy: policiesByPlanId[plan.id] || [],
+  }));
 }
 
 async function createRatePlan(roomTypeId, body) {

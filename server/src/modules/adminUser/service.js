@@ -13,8 +13,9 @@ async function createAdminUser({ name, email, password, roleId }) {
     throw ApiError.badRequest('name, email and password are required');
   }
 
+  const password_hash = await bcrypt.hash(password, 10);
   const [user] = await db('users')
-    .insert({ name, email, password_hash: bcrypt.hashSync(password, 10), role: 'admin', role_id: roleId ?? null })
+    .insert({ name, email, password_hash, role: 'admin', role_id: roleId ?? null })
     .returning(['id', 'name', 'email', 'role', 'role_id']);
 
   return user;
@@ -35,15 +36,16 @@ async function updateAdminUser(id, { roleId, status }) {
 
 async function listRoles() {
   const roles = await db('roles');
-  return Promise.all(
-    roles.map(async (role) => ({
-      ...role,
-      permissions: await db('role_permissions')
-        .join('permissions', 'permissions.id', 'role_permissions.permission_id')
-        .where('role_permissions.role_id', role.id)
-        .pluck('permissions.key'),
-    }))
-  );
+  const permissionRows = await db('role_permissions')
+    .join('permissions', 'permissions.id', 'role_permissions.permission_id')
+    .select('role_permissions.role_id', 'permissions.key');
+
+  const permissionsByRoleId = {};
+  for (const row of permissionRows) {
+    (permissionsByRoleId[row.role_id] ??= []).push(row.key);
+  }
+
+  return roles.map((role) => ({ ...role, permissions: permissionsByRoleId[role.id] || [] }));
 }
 
 async function listPermissions() {

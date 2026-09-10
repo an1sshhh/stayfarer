@@ -49,7 +49,7 @@ async function register({ name, email, password }) {
     throw ApiError.conflict('An account with this email already exists');
   }
 
-  const password_hash = bcrypt.hashSync(password, 10);
+  const password_hash = await bcrypt.hash(password, 10);
   const [user] = await db('users').insert({ name, email, password_hash, role: 'guest' }).returning('*');
   const customer = await findOrCreateCustomer({ name, email });
 
@@ -62,7 +62,7 @@ async function login({ email, password }) {
   }
 
   const user = await findByEmail(email);
-  if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+  if (!user || !(await bcrypt.compare(password, user.password_hash))) {
     throw ApiError.unauthorized('Invalid email or password');
   }
 

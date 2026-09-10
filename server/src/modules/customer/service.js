@@ -28,19 +28,26 @@ async function listCustomers({ search, page = 1, pageSize = 20 }) {
     .limit(pageSize)
     .offset((page - 1) * pageSize);
 
-  const withStats = await Promise.all(
-    customers.map(async (customer) => {
-      const stats = await db('bookings')
-        .where({ customer_id: customer.id })
+  const customerIds = customers.map((c) => c.id);
+  const statsRows = customerIds.length
+    ? await db('bookings')
+        .whereIn('customer_id', customerIds)
+        .groupBy('customer_id')
         .select(
+          'customer_id',
           db.raw('count(*) as total_bookings'),
           db.raw('coalesce(sum(total_amount), 0) as total_spent'),
           db.raw('max(created_at) as last_booking')
         )
-        .first();
-      return { ...customer, ...stats };
-    })
-  );
+    : [];
+  const statsByCustomerId = Object.fromEntries(statsRows.map((s) => [s.customer_id, s]));
+
+  const withStats = customers.map((customer) => ({
+    ...customer,
+    total_bookings: Number(statsByCustomerId[customer.id]?.total_bookings || 0),
+    total_spent: Number(statsByCustomerId[customer.id]?.total_spent || 0),
+    last_booking: statsByCustomerId[customer.id]?.last_booking || null,
+  }));
 
   return { data: withStats, total: Number(total.count), page: Number(page), pageSize: Number(pageSize) };
 }
