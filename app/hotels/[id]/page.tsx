@@ -74,10 +74,9 @@ const SUBNAV = [
 
 export default async function HotelDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const hotel = await getHotel(id);
+  const [hotel, roomTypes] = await Promise.all([getHotel(id), getRoomTypes(id)]);
   if (!hotel) notFound();
 
-  const roomTypes = await getRoomTypes(id);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const lowestPrice = roomTypes
     .flatMap((room) => room.ratePlans ?? [])

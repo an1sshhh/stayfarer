@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Footer() {
@@ -6,7 +7,13 @@ export default function Footer() {
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
         <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2.5">
-            <img src="/brand/icon-badge.svg" alt="" className="h-8 w-8 rounded-[8px]" />
+            <Image
+              src="/brand/icon-badge.svg"
+              alt=""
+              width={32}
+              height={32}
+              className="h-8 w-8 rounded-[8px]"
+            />
             <div>
               <p className="font-display text-base font-medium uppercase tracking-[0.08em] text-brand-700">
                 Stay Farer

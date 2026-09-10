@@ -1,8 +1,47 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 type GalleryImage = { id: number | string; url: string };
+
+function Tile({
+  src,
+  alt,
+  index,
+  onSelect,
+  className,
+  showExtra,
+  extra,
+}: {
+  src: string;
+  alt: string;
+  index: number;
+  onSelect: (index: number) => void;
+  className: string;
+  showExtra?: boolean;
+  extra: number;
+}) {
+  return (
+    <button
+      onClick={() => onSelect(index)}
+      className={`group relative overflow-hidden ${className}`}
+    >
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes="(min-width: 640px) 50vw, 100vw"
+        className="object-cover transition duration-300 group-hover:brightness-90"
+      />
+      {showExtra && extra > 0 && (
+        <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-sm font-semibold text-white">
+          +{extra} photos
+        </span>
+      )}
+    </button>
+  );
+}
 
 export default function ImageGallery({
   images,
@@ -41,31 +80,6 @@ export default function ImageGallery({
   const rest = images.slice(1, 5);
   const extra = images.length - 5;
 
-  const Tile = ({
-    img,
-    index,
-    className,
-    showExtra,
-  }: {
-    img: GalleryImage;
-    index: number;
-    className: string;
-    showExtra?: boolean;
-  }) => (
-    <button onClick={() => setLightboxIndex(index)} className={`group relative overflow-hidden ${className}`}>
-      <img
-        src={src(img.url)}
-        alt={alt}
-        className="h-full w-full object-cover transition duration-300 group-hover:brightness-90"
-      />
-      {showExtra && extra > 0 && (
-        <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-sm font-semibold text-white">
-          +{extra} photos
-        </span>
-      )}
-    </button>
-  );
-
   return (
     <>
       {/* Mobile: swipeable strip */}
@@ -74,9 +88,9 @@ export default function ImageGallery({
           <button
             key={img.id}
             onClick={() => setLightboxIndex(i)}
-            className="h-56 w-[85%] shrink-0 snap-start overflow-hidden rounded-xl"
+            className="relative h-56 w-[85%] shrink-0 snap-start overflow-hidden rounded-xl"
           >
-            <img src={src(img.url)} alt={alt} className="h-full w-full object-cover" />
+            <Image src={src(img.url)} alt={alt} fill sizes="85vw" className="object-cover" />
           </button>
         ))}
       </div>
@@ -84,39 +98,39 @@ export default function ImageGallery({
       {/* Desktop: mosaic grid, shaped to however many photos exist */}
       <div className="hidden sm:block" style={{ height: 380 }}>
         {images.length === 1 && (
-          <Tile img={main} index={0} className="h-full rounded-2xl" />
+          <Tile src={src(main.url)} alt={alt} index={0} onSelect={setLightboxIndex} className="h-full rounded-2xl" extra={extra} />
         )}
 
         {images.length === 2 && (
           <div className="grid h-full grid-cols-2 gap-2">
-            <Tile img={main} index={0} className="rounded-l-2xl" />
-            <Tile img={rest[0]} index={1} className="rounded-r-2xl" />
+            <Tile src={src(main.url)} alt={alt} index={0} onSelect={setLightboxIndex} className="rounded-l-2xl" extra={extra} />
+            <Tile src={src(rest[0].url)} alt={alt} index={1} onSelect={setLightboxIndex} className="rounded-r-2xl" extra={extra} />
           </div>
         )}
 
         {images.length === 3 && (
           <div className="grid h-full grid-cols-2 grid-rows-2 gap-2">
-            <Tile img={main} index={0} className="col-span-1 row-span-2 rounded-l-2xl" />
-            <Tile img={rest[0]} index={1} className="rounded-tr-2xl" />
-            <Tile img={rest[1]} index={2} className="rounded-br-2xl" />
+            <Tile src={src(main.url)} alt={alt} index={0} onSelect={setLightboxIndex} className="col-span-1 row-span-2 rounded-l-2xl" extra={extra} />
+            <Tile src={src(rest[0].url)} alt={alt} index={1} onSelect={setLightboxIndex} className="rounded-tr-2xl" extra={extra} />
+            <Tile src={src(rest[1].url)} alt={alt} index={2} onSelect={setLightboxIndex} className="rounded-br-2xl" extra={extra} />
           </div>
         )}
 
         {images.length === 4 && (
           <div className="grid h-full grid-cols-3 grid-rows-2 gap-2">
-            <Tile img={main} index={0} className="col-span-2 row-span-2 rounded-l-2xl" />
-            <Tile img={rest[0]} index={1} className="rounded-tr-2xl" />
-            <Tile img={rest[1]} index={2} className="rounded-br-2xl" />
+            <Tile src={src(main.url)} alt={alt} index={0} onSelect={setLightboxIndex} className="col-span-2 row-span-2 rounded-l-2xl" extra={extra} />
+            <Tile src={src(rest[0].url)} alt={alt} index={1} onSelect={setLightboxIndex} className="rounded-tr-2xl" extra={extra} />
+            <Tile src={src(rest[1].url)} alt={alt} index={2} onSelect={setLightboxIndex} className="rounded-br-2xl" extra={extra} />
           </div>
         )}
 
         {images.length >= 5 && (
           <div className="grid h-full grid-cols-4 grid-rows-2 gap-2">
-            <Tile img={main} index={0} className="col-span-2 row-span-2 rounded-l-2xl" />
-            <Tile img={rest[0]} index={1} className="" />
-            <Tile img={rest[1]} index={2} className="rounded-tr-2xl" />
-            <Tile img={rest[2]} index={3} className="" />
-            <Tile img={rest[3]} index={4} className="rounded-br-2xl" showExtra />
+            <Tile src={src(main.url)} alt={alt} index={0} onSelect={setLightboxIndex} className="col-span-2 row-span-2 rounded-l-2xl" extra={extra} />
+            <Tile src={src(rest[0].url)} alt={alt} index={1} onSelect={setLightboxIndex} className="" extra={extra} />
+            <Tile src={src(rest[1].url)} alt={alt} index={2} onSelect={setLightboxIndex} className="rounded-tr-2xl" extra={extra} />
+            <Tile src={src(rest[2].url)} alt={alt} index={3} onSelect={setLightboxIndex} className="" extra={extra} />
+            <Tile src={src(rest[3].url)} alt={alt} index={4} onSelect={setLightboxIndex} className="rounded-br-2xl" showExtra extra={extra} />
           </div>
         )}
       </div>
@@ -155,10 +169,12 @@ export default function ImageGallery({
                 ‹
               </button>
             )}
-            <img
+            <Image
               src={src(images[lightboxIndex].url)}
               alt={alt}
-              className="max-h-full max-w-full rounded-lg object-contain"
+              fill
+              sizes="100vw"
+              className="rounded-lg object-contain"
             />
             {images.length > 1 && (
               <button

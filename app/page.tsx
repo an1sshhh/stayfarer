@@ -1,14 +1,7 @@
 import Link from "next/link";
 import SearchBar from "./components/SearchBar";
-
-type Hotel = {
-  id: number;
-  name: string;
-  city: string;
-  hotel_type: string;
-  star_category: number | null;
-  image_url: string | null;
-};
+import HotelCard from "./components/HotelCard";
+import type { Hotel } from "./lib/types";
 
 async function getFeaturedHotels(): Promise<Hotel[]> {
   try {
@@ -114,39 +107,7 @@ export default async function Home() {
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {hotels.map((hotel) => (
-              <Link
-                key={hotel.id}
-                href={`/hotels/${hotel.id}`}
-                className="group overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-lg"
-              >
-                <div className="h-44 w-full overflow-hidden bg-sand-200">
-                  {hotel.image_url ? (
-                    <img
-                      src={`${process.env.NEXT_PUBLIC_API_URL}${hotel.image_url}`}
-                      alt={hotel.name}
-                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-sm text-stone-400">
-                      No image
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-stone-900">{hotel.name}</h3>
-                    {hotel.star_category ? (
-                      <span className="shrink-0 text-xs font-medium text-accent-500">
-                        {"★".repeat(hotel.star_category)}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-1 text-sm text-stone-500">{hotel.city}</p>
-                  <p className="mt-1 text-xs uppercase tracking-wide text-stone-400">
-                    {hotel.hotel_type}
-                  </p>
-                </div>
-              </Link>
+              <HotelCard key={hotel.id} hotel={hotel} apiUrl={process.env.NEXT_PUBLIC_API_URL} />
             ))}
           </div>
         )}

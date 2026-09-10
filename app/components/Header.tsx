@@ -1,9 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 
 type User = { id: number; name: string; email: string; role: string };
+
+function readUser(): User | null {
+  const stored = localStorage.getItem("user");
+  return stored ? JSON.parse(stored) : null;
+}
 
 export default function Header() {
   const [user, setUser] = useState<User | null>(null);
@@ -12,6 +18,16 @@ export default function Header() {
   useEffect(() => {
     const stored = localStorage.getItem("user");
     if (stored) setUser(JSON.parse(stored));
+
+    function onAuthChange() {
+      setUser(readUser());
+    }
+    window.addEventListener("authchange", onAuthChange);
+    window.addEventListener("storage", onAuthChange);
+    return () => {
+      window.removeEventListener("authchange", onAuthChange);
+      window.removeEventListener("storage", onAuthChange);
+    };
   }, []);
 
   function logout() {
@@ -25,7 +41,13 @@ export default function Header() {
     <header className="sticky top-0 z-50 border-b border-stone-200/80 bg-sand-50/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5">
-          <img src="/brand/icon-badge.svg" alt="" className="h-9 w-9 rounded-[9px]" />
+          <Image
+            src="/brand/icon-badge.svg"
+            alt=""
+            width={36}
+            height={36}
+            className="h-9 w-9 rounded-[9px]"
+          />
           <span className="font-display text-xl font-medium uppercase tracking-[0.08em] text-brand-700">
             Stay Farer
           </span>

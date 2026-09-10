@@ -36,6 +36,7 @@ function RegisterForm() {
 
       localStorage.setItem("token", data.data.token);
       localStorage.setItem("user", JSON.stringify(data.data.user));
+      window.dispatchEvent(new Event("authchange"));
       router.push(next);
       router.refresh();
     } catch {
