@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Web (Guest App)
 
-## Getting Started
+Next.js app for guests: browsing/booking hotels and signing in. Part of the [hotel-booking](../README.md) platform.
 
-First, run the development server:
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.local.example .env.local   # point at the backend if it's not on localhost:4000
+npm run dev                         # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Requires the [`server`](./server) app running (defaults to `http://localhost:4000`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cd server
+npm install
+cp .env.example .env
+npx knex migrate:latest
+npx knex seed:run
+npm run dev   # http://localhost:4000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## What's implemented
 
-## Learn More
+### Public (no auth required)
+- `/` — homepage: hero search, popular destinations, featured hotels grid pulled live from API
+- `/hotels` — search results: filter by city/search query, grid layout
+- `/hotels/:id` — hotel detail: images, amenities, description, room types with pricing + inline "Book Now" + date/guest picker
 
-To learn more about Next.js, take a look at the following resources:
+### Auth flow
+- `/register` — guest signup form → `POST /api/auth/register` → stores JWT with `customerId` in `localStorage`
+- `/login` — sign in form → `POST /api/auth/login` → returns to `?next` param (defaults to home)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Booking (gated by auth)
+- `/hotels/:id/book?roomTypeId=X&ratePlanId=Y&checkIn=...&checkOut=...&guests=N` — 
+  - If logged out: shows "Sign in to book" modal with Log in / Create account buttons
+  - If logged in: confirm order summary → `POST /api/bookings` → shows success page with booking ID
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Structure
 
-## Deploy on Vercel
+```
+app/
+  page.tsx                     # homepage
+  login/page.tsx               # login form with register link
+  register/page.tsx            # signup form with login link
+  hotels/
+    page.tsx                   # search results
+    [id]/page.tsx              # hotel detail
+    [id]/book/page.tsx         # booking confirmation (gated)
+  components/
+    Header.tsx                 # sticky nav: Stayfarer logo, Hotels link, sign in/out
+    SearchBar.tsx              # city/check-in/check-out/guests, submits to /hotels
+    RoomBookingCard.tsx        # per-room card with date/guest input + "Book Now" button
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Key features
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Stateless auth**: JWT in `localStorage`, attached to all API calls via `Authorization: Bearer` header
+- **Server-computed pricing**: room price → taxes → discount → total, all calculated on backend (never trust frontend prices)
+- **Inventory atomicity**: bookings reserve inventory transactionally (prevents double-booking under concurrent requests)
+- **Responsive design**: mobile-first with Tailwind, works on phones/tablets/desktop
+- **Live data**: all listings pull fresh from API (no static content)
+
+## Next steps
+
+- Payment gateway integration
+- Wishlist / saved properties
+- Guest reviews UI
+- Coupon code input field on booking confirm
+- Booking history + cancellations
+- Email notifications

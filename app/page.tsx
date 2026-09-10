@@ -1,69 +1,156 @@
-import Image from "next/image";
+import Link from "next/link";
+import SearchBar from "./components/SearchBar";
 
-export default function Home() {
+type Hotel = {
+  id: number;
+  name: string;
+  city: string;
+  hotel_type: string;
+  star_category: number | null;
+  image_url: string | null;
+};
+
+async function getFeaturedHotels(): Promise<Hotel[]> {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hotels?status=active`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    const hotels: Hotel[] = json.data ?? [];
+    return hotels.slice(0, 6);
+  } catch {
+    return [];
+  }
+}
+
+const DESTINATIONS = ["Goa", "Mumbai", "Jaipur", "Manali", "Bengaluru", "Udaipur"];
+
+const TRUST_POINTS = [
+  { label: "Transparent pricing", detail: "taxes included, no surprises at checkout" },
+  { label: "Live availability", detail: "real-time inventory across every listing" },
+  { label: "Secure sign-in", detail: "your bookings, safely under one account" },
+];
+
+export default async function Home() {
+  const hotels = await getFeaturedHotels();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="flex-1">
+      <section className="relative overflow-hidden bg-brand-900 px-4 pb-24 pt-16 text-sand-50 sm:px-6 sm:pt-20">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-40"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 15% 20%, rgba(193,99,61,0.35), transparent 45%), radial-gradient(circle at 85% 0%, rgba(61,74,79,0.5), transparent 50%)",
+          }}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+        <div className="relative mx-auto max-w-4xl text-center">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-accent-500">
+            Boutique stays, every mile
+          </p>
+          <h1 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+            Find your next stay
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mx-auto mt-3 max-w-xl text-brand-100">
+            Handpicked hotels, resorts, and villas — booked in minutes, at prices that
+            already include tax.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="relative mx-auto mt-8 max-w-4xl">
+          <SearchBar />
         </div>
-      </main>
-    </div>
+      </section>
+
+      <section className="relative z-10 mx-auto -mt-10 max-w-6xl px-4 sm:px-6">
+        <div className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-lg shadow-brand-900/5 ring-1 ring-black/5 sm:grid-cols-3">
+          {TRUST_POINTS.map((point) => (
+            <div key={point.label} className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
+                ✓
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-stone-900">{point.label}</p>
+                <p className="text-xs text-stone-500">{point.detail}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+        <h2 className="mb-4 font-display text-xl font-semibold text-stone-900">
+          Popular destinations
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          {DESTINATIONS.map((city) => (
+            <Link
+              key={city}
+              href={`/hotels?city=${encodeURIComponent(city)}`}
+              className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm text-stone-700 transition hover:border-brand-500 hover:text-brand-700"
+            >
+              {city}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
+        <div className="mb-5 flex items-end justify-between">
+          <div>
+            <h2 className="font-display text-xl font-semibold text-stone-900">Featured hotels</h2>
+            <p className="text-sm text-stone-500">Popular picks from across the country</p>
+          </div>
+          <Link href="/hotels" className="text-sm font-semibold text-brand-700 hover:underline">
+            View all →
+          </Link>
+        </div>
+
+        {hotels.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-stone-300 bg-white p-10 text-center text-sm text-stone-500">
+            No hotels available yet. Check back soon, or explore all listings.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {hotels.map((hotel) => (
+              <Link
+                key={hotel.id}
+                href={`/hotels/${hotel.id}`}
+                className="group overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-lg"
+              >
+                <div className="h-44 w-full overflow-hidden bg-sand-200">
+                  {hotel.image_url ? (
+                    <img
+                      src={`${process.env.NEXT_PUBLIC_API_URL}${hotel.image_url}`}
+                      alt={hotel.name}
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-stone-400">
+                      No image
+                    </div>
+                  )}
+                </div>
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-semibold text-stone-900">{hotel.name}</h3>
+                    {hotel.star_category ? (
+                      <span className="shrink-0 text-xs font-medium text-accent-500">
+                        {"★".repeat(hotel.star_category)}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 text-sm text-stone-500">{hotel.city}</p>
+                  <p className="mt-1 text-xs uppercase tracking-wide text-stone-400">
+                    {hotel.hotel_type}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
   );
 }

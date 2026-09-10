@@ -1,0 +1,57 @@
+const ICONS: Record<string, string> = {
+  wifi: "📶",
+  internet: "📶",
+  parking: "🅿️",
+  pool: "🏊",
+  swimming: "🏊",
+  gym: "🏋️",
+  fitness: "🏋️",
+  spa: "💆",
+  breakfast: "🍳",
+  restaurant: "🍽️",
+  bar: "🍸",
+  cafe: "☕",
+  "in-room dining": "🍽️",
+  "room service": "🛎️",
+  laundry: "🧺",
+  "air conditioning": "❄️",
+  ac: "❄️",
+  tv: "📺",
+  kitchen: "🍳",
+  elevator: "🛗",
+  lift: "🛗",
+  "front desk": "🛎️",
+  security: "🛡️",
+  cctv: "🛡️",
+  pet: "🐾",
+  smoking: "🚬",
+  garden: "🌿",
+  view: "🏞️",
+  beach: "🏖️",
+  bonfire: "🔥",
+  games: "🎲",
+  "board games": "🎲",
+  foosball: "🎲",
+  bookshelf: "📚",
+  locker: "🔒",
+  iron: "🧥",
+  heater: "🔥",
+  bicycle: "🚲",
+  bike: "🚲",
+  shuttle: "🚌",
+  concierge: "🛎️",
+  luggage: "🧳",
+  workspace: "💻",
+  desk: "💻",
+  balcony: "🌇",
+  terrace: "🌇",
+  yoga: "🧘",
+};
+
+export function amenityEmoji(name: string) {
+  const key = name.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  for (const [k, icon] of Object.entries(ICONS)) {
+    if (key.includes(k.replace(/[^a-z0-9]+/g, ""))) return icon;
+  }
+  return "✓";
+}
