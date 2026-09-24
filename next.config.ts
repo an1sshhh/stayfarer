@@ -6,7 +6,11 @@ const isLocalApi = apiHostname === "localhost" || apiHostname === "127.0.0.1";
 
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: apiUrl ? [new URL(`${apiUrl}/**`)] : [],
+    remotePatterns: [
+      ...(apiUrl ? [new URL(`${apiUrl}/**`)] : []),
+      // Hosted photos are uploaded by the admin panel to Supabase Storage (public bucket).
+      new URL("https://*.supabase.co/storage/v1/object/public/**"),
+    ],
     // Next's SSRF guard blocks image optimization for any URL that resolves to a
     // loopback/private IP. Our own API is on localhost in dev, and remotePatterns
     // above already restricts fetches to that exact host, so it's safe to allow here.

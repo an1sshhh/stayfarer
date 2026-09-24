@@ -62,11 +62,16 @@ app/
 - **Responsive design**: mobile-first with Tailwind, works on phones/tablets/desktop
 - **Live data**: all listings pull fresh from API (no static content)
 
-## Next steps
+## Deploy (free tier)
 
-- Payment gateway integration
-- Wishlist / saved properties
-- Guest reviews UI
-- Coupon code input field on booking confirm
-- Booking history + cancellations
-- Email notifications
+| Piece | Host | Config |
+|---|---|---|
+| Guest API (`server/`) | Render — [`render.yaml`](render.yaml) | set the `sync: false` vars in the Render dashboard |
+| Website | Vercel (Next.js, auto-detected) | `NEXT_PUBLIC_API_URL` = the Render URL |
+| Database | Supabase (session pooler, port 5432), shared with the admin API | `DATABASE_URL`, `DATABASE_PASSWORD` |
+
+1. **Render** → New → Blueprint → pick this repo. `JWT_SECRET` must match the admin API. Set `SITE_URL`/`CORS_ORIGINS` to the Vercel URL of the site.
+2. **Vercel** → Add New Project → this repo, with `NEXT_PUBLIC_API_URL=https://<your-api>.onrender.com`.
+3. **Razorpay** → Webhooks → `https://<your-api>.onrender.com/api/checkout/webhooks/razorpay` (payment.captured, payment.failed, refund.processed, refund.failed), and put its secret in `RAZORPAY_WEBHOOK_SECRET`.
+
+Photos are uploaded through the admin panel to Supabase Storage and stored as full URLs, so this API doesn't serve files when hosted.

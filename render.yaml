@@ -1,0 +1,40 @@
+# Render Blueprint for the guest API (web/server). The Next.js site itself is hosted on Vercel.
+# Secrets are marked sync: false — Render asks for them when the Blueprint is first applied.
+services:
+  - type: web
+    name: stayfarer-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: server
+    buildCommand: npm ci --omit=dev
+    startCommand: node src/index.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: DB_SSL_CA_FILE
+        value: certs/supabase-ca.crt
+      - key: DB_POOL_MAX
+        value: "5"
+      - key: JWT_SECRET # must match the admin API's JWT_SECRET
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: SITE_URL # the Vercel URL of the website
+        sync: false
+      - key: CORS_ORIGINS # same as SITE_URL (comma-separate to add more)
+        sync: false
