@@ -4,6 +4,8 @@ const db = require('../../database/db');
 const config = require('../../config');
 const { findByEmail } = require('../../shared/utils/user');
 const { ApiError } = require('../../core/ApiError');
+const { enqueueEmail } = require('../../shared/utils/emailOutbox');
+const logger = require('../../shared/loggers/logger');
 
 /**
  * Guests log in against `users`, but bookings hang off `customers`.
@@ -52,6 +54,15 @@ async function register({ name, email, password }) {
   const password_hash = await bcrypt.hash(password, 10);
   const [user] = await db('users').insert({ name, email, password_hash, role: 'guest' }).returning('*');
   const customer = await findOrCreateCustomer({ name, email });
+
+  // Best effort: a mail-queue hiccup must never block sign-up.
+  await enqueueEmail(null, {
+    templateKey: 'welcome',
+    to: user.email,
+    data: { guest_name: String(name).split(' ')[0], search_url: `${config.siteUrl}/hotels`, offers_url: `${config.siteUrl}/offers` },
+    entityType: 'user',
+    entityId: user.id,
+  }).catch((err) => logger.error(`Could not queue welcome email: ${err.message}`));
 
   return { token: issueToken(user, customer.id), user: toPublicUser(user) };
 }

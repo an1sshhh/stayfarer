@@ -37,5 +37,5 @@ exports.seed = async function (knex) {
   }
 
   const superAdmin = await knex('roles').where({ name: 'Super Admin' }).first();
-  await knex('users').where({ email: 'admin@example.com' }).update({ role_id: superAdmin.id });
+  await knex('users').where({ email: process.env.SEED_ADMIN_EMAIL }).update({ role_id: superAdmin.id });
 };

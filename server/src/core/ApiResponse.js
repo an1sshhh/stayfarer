@@ -1,4 +1,3 @@
-const multer = require('multer');
 const { HttpStatus } = require('../types/httpStatus');
 const { ApiError } = require('./ApiError');
 const logger = require('../shared/loggers/logger');
@@ -11,18 +10,6 @@ class ApiResponse {
 
   static created(res, { message = 'Created', data = null } = {}) {
     ApiResponse.success(res, { statusCode: HttpStatus.CREATED, message, data });
-  }
-
-  static noContent(res) {
-    res.status(HttpStatus.NO_CONTENT).send();
-  }
-
-  static render(res, view, locals) {
-    res.render(view, locals);
-  }
-
-  static redirect(res, url) {
-    res.redirect(url);
   }
 }
 
@@ -39,13 +26,6 @@ const PG_MESSAGES = {
 function normalize(err) {
   if (err instanceof ApiError) return err;
 
-  if (err instanceof multer.MulterError) {
-    const message = err.code === 'LIMIT_FILE_SIZE' ? 'Image must be 5 MB or smaller' : `Upload failed: ${err.message}`;
-    return ApiError.badRequest(message);
-  }
-  if (err.message === 'Only image uploads are allowed') {
-    return ApiError.badRequest(err.message);
-  }
   if (err.code && PG_MESSAGES[err.code]) {
     return ApiError.badRequest(PG_MESSAGES[err.code]);
   }
@@ -69,7 +49,7 @@ function apiErrorHandler(err, req, res, next) {
   res.status(apiError.statusCode).json({
     success: false,
     statusCode: apiError.statusCode,
-    message: apiError.statusCode >= 500 ? 'Something went wrong on our end' : apiError.message,
+    message: apiError.statusCode >= 500 && !apiError.expose ? 'Something went wrong on our end' : apiError.message,
     ...(apiError.details ? { details: apiError.details } : {}),
     requestId: req.id,
   });

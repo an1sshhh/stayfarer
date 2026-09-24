@@ -1,163 +1,93 @@
 const db = require('../../database/db');
 const { ApiError } = require('../../core/ApiError');
+const { dateRange } = require('../../shared/utils/availability');
 
-const ROOM_FIELDS = [
-  'name', 'description', 'size_label', 'bed_type',
-  'max_adults', 'max_children', 'max_occupancy', 'room_view',
-  'total_rooms', 'status',
-];
-
-function pickFields(body, fields) {
-  const result = {};
-  for (const field of fields) {
-    if (body[field] !== undefined) result[field] = body[field];
-  }
-  return result;
-}
-
-async function listRoomTypesByHotel(hotelId) {
-  return db('room_types').where({ hotel_id: hotelId }).orderBy('created_at');
-}
-
-async function getRoomTypeById(id) {
-  const roomType = await db('room_types').where({ id }).first();
-  if (!roomType) throw ApiError.notFound('Room type not found');
-
-  const images = await db('room_images').where({ room_type_id: roomType.id }).orderBy('sort_order');
-  const amenities = await db('room_amenities')
-    .join('amenities', 'amenities.id', 'room_amenities.amenity_id')
-    .where('room_amenities.room_type_id', roomType.id)
-    .select('amenities.id', 'amenities.name');
-  const ratePlans = await db('rate_plans').where({ room_type_id: roomType.id });
-
-  return { ...roomType, images, amenities, ratePlans };
-}
-
-async function getInventory(roomTypeId, { from, to }) {
-  let query = db('room_inventory').where({ room_type_id: roomTypeId });
-  if (from) query = query.andWhere('date', '>=', from);
-  if (to) query = query.andWhere('date', '<=', to);
-  const rows = await query.orderBy('date');
-  return rows.map((r) => ({ ...r, available: r.total - r.booked - r.blocked }));
-}
-
-async function createRoomType(hotelId, body) {
-  const { name, total_rooms } = body;
-  if (!name) throw ApiError.badRequest('Room name is required');
-  if (total_rooms !== undefined && Number(total_rooms) < 0) {
-    throw ApiError.badRequest('Total rooms must be >= 0');
+/**
+ * Marks each room type with whether it has enough free inventory for
+ * `numRooms` on every night of [checkIn, checkOut). Mirrors the check
+ * `reserveInventory` makes at booking time, so a room shown as available
+ * here will actually book.
+ */
+async function annotateAvailability(roomTypes, { checkIn, checkOut, numRooms = 1 }) {
+  const dates = dateRange(checkIn, checkOut);
+  if (dates.length === 0 || roomTypes.length === 0) {
+    return roomTypes.map((r) => ({ ...r, available: null }));
   }
 
-  const data = pickFields(body, ROOM_FIELDS);
-  const [roomType] = await db('room_types')
-    .insert({ ...data, hotel_id: hotelId })
-    .returning('*');
+  const rows = await db('room_inventory')
+    .whereIn('room_type_id', roomTypes.map((r) => r.id))
+    .whereIn('date', dates)
+    .andWhereRaw('total - booked - blocked >= ?', [numRooms])
+    .groupBy('room_type_id')
+    .havingRaw('count(distinct date) = ?', [dates.length])
+    .select('room_type_id');
 
-  return roomType;
+  const availableIds = new Set(rows.map((r) => r.room_type_id));
+  return roomTypes.map((r) => ({ ...r, available: availableIds.has(r.id) }));
 }
 
-async function updateRoomType(id, body) {
-  const existing = await db('room_types').where({ id }).first();
-  if (!existing) throw ApiError.notFound('Room type not found');
-
-  const data = pickFields(body, ROOM_FIELDS);
-  const [roomType] = await db('room_types').where({ id }).update(data).returning('*');
-  return roomType;
+function groupBy(rows, key) {
+  const out = {};
+  for (const row of rows) (out[row[key]] ??= []).push(row);
+  return out;
 }
 
-// Soft delete: keep the row so historical bookings still resolve.
-async function deactivateRoomType(id) {
-  const existing = await db('room_types').where({ id }).first();
-  if (!existing) throw ApiError.notFound('Room type not found');
+/**
+ * Everything the public hotel page needs to render its room/rate table in
+ * one call: active room types with images, amenities, active rate plans
+ * (inclusions + cancellation slabs) and — when dates are given — whether
+ * each room has `rooms` free units on every night of the stay.
+ */
+async function listRoomOffers(hotelId, { checkIn, checkOut, guests, rooms } = {}) {
+  const numRooms = Math.max(1, Number.parseInt(rooms, 10) || 1);
+  let roomTypes = await db('room_types').where({ hotel_id: hotelId, status: 'active' }).orderBy('created_at');
+  if (!roomTypes.length) return [];
 
-  await db('room_types').where({ id }).update({ status: 'inactive' });
-}
+  const ids = roomTypes.map((r) => r.id);
+  const [images, amenities, ratePlans] = await Promise.all([
+    db('room_images').whereIn('room_type_id', ids).orderBy('sort_order'),
+    db('room_amenities')
+      .join('amenities', 'amenities.id', 'room_amenities.amenity_id')
+      .whereIn('room_amenities.room_type_id', ids)
+      .select('room_amenities.room_type_id', 'amenities.id', 'amenities.name'),
+    db('rate_plans').whereIn('room_type_id', ids).where({ status: 'active' }).orderBy('price'),
+  ]);
 
-async function addRoomImage(roomTypeId, file, category = 'other') {
-  const [{ maxOrder }] = await db('room_images').where({ room_type_id: roomTypeId }).max('sort_order as maxOrder');
+  const planIds = ratePlans.map((p) => p.id);
+  const [inclusions, policies] = planIds.length
+    ? await Promise.all([
+        db('rate_plan_inclusions').whereIn('rate_plan_id', planIds),
+        db('cancellation_policies').whereIn('rate_plan_id', planIds).orderBy('days_before_checkin', 'desc'),
+      ])
+    : [[], []];
 
-  const [image] = await db('room_images')
-    .insert({
-      room_type_id: roomTypeId,
-      url: `/uploads/${file.filename}`,
-      category,
-      sort_order: (maxOrder ?? -1) + 1,
-    })
-    .returning('*');
+  const inclusionsByPlan = groupBy(inclusions, 'rate_plan_id');
+  const policiesByPlan = groupBy(policies, 'rate_plan_id');
+  const plansByRoom = groupBy(
+    ratePlans.map((p) => ({
+      ...p,
+      inclusions: (inclusionsByPlan[p.id] || []).map((i) => i.label),
+      cancellationPolicy: policiesByPlan[p.id] || [],
+    })),
+    'room_type_id'
+  );
+  const imagesByRoom = groupBy(images, 'room_type_id');
+  const amenitiesByRoom = groupBy(amenities, 'room_type_id');
 
-  return image;
-}
+  roomTypes = roomTypes
+    .map((r) => ({
+      ...r,
+      images: imagesByRoom[r.id] || [],
+      amenities: (amenitiesByRoom[r.id] || []).map(({ id, name }) => ({ id, name })),
+      ratePlans: plansByRoom[r.id] || [],
+      fitsGuests: guests ? r.max_occupancy * numRooms >= Number(guests) : true,
+    }))
+    .filter((r) => r.ratePlans.length > 0);
 
-async function setPrimaryImage(roomTypeId, imageId) {
-  await db('room_images').where({ room_type_id: roomTypeId }).update({ is_primary: false });
-  const [image] = await db('room_images')
-    .where({ id: imageId, room_type_id: roomTypeId })
-    .update({ is_primary: true })
-    .returning('*');
-
-  if (!image) throw ApiError.notFound('Image not found');
-  return image;
-}
-
-async function deleteImage(roomTypeId, imageId) {
-  const deleted = await db('room_images').where({ id: imageId, room_type_id: roomTypeId }).del();
-  if (!deleted) throw ApiError.notFound('Image not found');
-}
-
-async function updateAmenities(roomTypeId, amenityIds = []) {
-  await db.transaction(async (trx) => {
-    await trx('room_amenities').where({ room_type_id: roomTypeId }).del();
-    if (amenityIds.length) {
-      await trx('room_amenities').insert(
-        amenityIds.map((amenityId) => ({ room_type_id: roomTypeId, amenity_id: amenityId }))
-      );
-    }
-  });
-
-  return db('room_amenities')
-    .join('amenities', 'amenities.id', 'room_amenities.amenity_id')
-    .where('room_amenities.room_type_id', roomTypeId)
-    .select('amenities.id', 'amenities.name');
-}
-
-async function updateInventory(roomTypeId, dates) {
-  if (!Array.isArray(dates)) throw ApiError.badRequest('dates array is required');
-
-  for (const entry of dates) {
-    if (Number(entry.total) < 0) throw ApiError.badRequest('Inventory total must be >= 0');
+  if (checkIn && checkOut) {
+    roomTypes = await annotateAvailability(roomTypes, { checkIn, checkOut, numRooms });
   }
-
-  await db.transaction(async (trx) => {
-    for (const entry of dates) {
-      await trx('room_inventory')
-        .insert({ room_type_id: roomTypeId, date: entry.date, total: entry.total })
-        .onConflict(['room_type_id', 'date'])
-        .merge({ total: entry.total });
-    }
-  });
+  return roomTypes;
 }
 
-async function setInventoryBlock(roomTypeId, date, blocked) {
-  const [row] = await db('room_inventory')
-    .insert({ room_type_id: roomTypeId, date, total: 0, blocked: blocked ?? 1 })
-    .onConflict(['room_type_id', 'date'])
-    .merge({ blocked: blocked ?? 1 })
-    .returning('*');
-
-  return row;
-}
-
-module.exports = {
-  listRoomTypesByHotel,
-  getRoomTypeById,
-  getInventory,
-  createRoomType,
-  updateRoomType,
-  deactivateRoomType,
-  addRoomImage,
-  setPrimaryImage,
-  deleteImage,
-  updateAmenities,
-  updateInventory,
-  setInventoryBlock,
-};
+module.exports = { annotateAvailability, listRoomOffers };

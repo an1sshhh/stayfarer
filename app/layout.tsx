@@ -1,40 +1,43 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Fraunces } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import { THEME_BOOT_SCRIPT } from "./lib/theme";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  axes: ["opsz"],
 });
 
 export const metadata: Metadata = {
-  title: "Stay Farer — Boutique stays, every mile",
+  title: "Stay Farer — Book hotels, resorts & villas at the best prices",
   description: "Search and book hotels, resorts, and villas with Stay Farer.",
   icons: {
     icon: "/brand/icon-badge.svg",
   },
 };
 
+export const viewport: Viewport = {
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#131c2e" },
+  ],
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${inter.variable} h-full antialiased`}
+      // The boot script may set data-theme before React hydrates.
+      suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col bg-sand-50 font-sans text-stone-900">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
+      <body className="flex min-h-full flex-col bg-sand-50 font-sans text-slate-900">
         <Header />
         {children}
         <Footer />

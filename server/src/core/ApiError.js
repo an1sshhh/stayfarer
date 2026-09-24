@@ -33,6 +33,13 @@ class ApiError extends Error {
   static internal(message = 'Something went wrong on our end', details) {
     return new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, message, details);
   }
+
+  /** A 5xx whose message is written for the end user and safe to show them. */
+  static unavailable(message, statusCode = 503) {
+    const err = new ApiError(statusCode, message);
+    err.expose = true;
+    return err;
+  }
 }
 
 module.exports = { ApiError };

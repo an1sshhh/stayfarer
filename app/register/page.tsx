@@ -7,7 +7,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/";
+  const rawNext = searchParams.get("next") || "/";
+  // Only follow on-site paths ("/x"), never "//evil.com" or absolute URLs.
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -50,7 +52,7 @@ function RegisterForm() {
     <main className="flex min-h-[calc(100vh-140px)] items-center justify-center bg-sand-100 px-4 py-12">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-2xl border border-stone-200 bg-white p-8 shadow-lg shadow-brand-900/5"
+        className="w-full max-w-sm rounded-2xl border border-stone-200 bg-surface p-8 shadow-lg shadow-brand-900/5"
       >
         <h1 className="mb-1 font-display text-2xl font-semibold text-stone-900">
           Create your account
@@ -91,7 +93,7 @@ function RegisterForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-full bg-brand-700 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
+          className="w-full rounded-full bg-brand-600 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
         >
           {loading ? "Creating account..." : "Create account"}
         </button>

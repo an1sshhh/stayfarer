@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config');
-const db = require('../database/db');
 const { ApiError } = require('../core/ApiError');
 
 function requireAuth(req, res, next) {
@@ -18,33 +17,17 @@ function requireAuth(req, res, next) {
   }
 }
 
-function requireRole(role) {
-  return (req, res, next) => {
-    if (req.user?.role !== role) return next(ApiError.forbidden());
-    next();
-  };
+/** Attaches req.user when a valid token is sent, but never rejects the request. */
+function optionalAuth(req, res, next) {
+  const header = req.headers.authorization;
+  if (header && header.startsWith('Bearer ')) {
+    try {
+      req.user = jwt.verify(header.split(' ')[1], config.jwtSecret);
+    } catch {
+      // Expired/invalid tokens are treated as anonymous here.
+    }
+  }
+  next();
 }
 
-/**
- * Permission-based guard, layered on top of the legacy role check.
- * A plain `role: 'admin'` JWT (no role_id) is treated as having every
- * permission, so existing admin logins keep working unchanged.
- */
-function requirePermission(key) {
-  return async (req, res, next) => {
-    if (!req.user) return next(ApiError.unauthorized());
-    if (req.user.role === 'admin' && !req.user.roleId) return next();
-    if (!req.user.roleId) return next(ApiError.forbidden());
-
-    const hasPermission = await db('role_permissions')
-      .join('permissions', 'permissions.id', 'role_permissions.permission_id')
-      .where('role_permissions.role_id', req.user.roleId)
-      .andWhere('permissions.key', key)
-      .first();
-
-    if (!hasPermission) return next(ApiError.forbidden());
-    next();
-  };
-}
-
-module.exports = { requireAuth, requireRole, requirePermission };
+module.exports = { requireAuth, optionalAuth };

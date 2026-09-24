@@ -138,7 +138,7 @@ export default function ImageGallery({
       {images.length > 1 && (
         <button
           onClick={() => setLightboxIndex(0)}
-          className="mt-3 hidden rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-semibold text-stone-700 shadow-sm hover:bg-sand-50 sm:inline-block"
+          className="mt-3 hidden rounded-full border border-stone-300 bg-surface px-4 py-2 text-xs font-semibold text-stone-700 shadow-sm hover:bg-sand-50 sm:inline-block"
         >
           Show all {images.length} photos
         </button>
@@ -146,7 +146,7 @@ export default function ImageGallery({
 
       {lightboxIndex !== null && (
         <div className="fixed inset-0 z-[100] flex flex-col bg-black/95">
-          <div className="flex items-center justify-between px-4 py-3 text-sand-50 sm:px-6">
+          <div className="flex items-center justify-between px-4 py-3 text-white sm:px-6">
             <span className="text-sm">
               {lightboxIndex + 1} / {images.length}
             </span>

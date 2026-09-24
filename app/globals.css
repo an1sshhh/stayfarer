@@ -1,25 +1,165 @@
 @import "tailwindcss";
 
+/*
+ * OTA-style system (MakeMyTrip / Goibibo / Booking.com / Agoda conventions):
+ * navy hero band, cool-grey canvas with white cards, one blue for
+ * selection + links, one warm orange reserved for the primary CTA, green
+ * for "free cancellation"/savings. Token names are kept from the original
+ * Stayfarer theme so existing pages pick the new palette up automatically.
+ */
 :root {
-  --background: #f5f1e8;
-  --foreground: #1f2a2e;
+  --background: #f2f4f8;
+  --foreground: #16202e;
 
-  /* Stayfarer ink — from stay-farer-logo-v2.svg */
-  --brand-50: #eceeee;
-  --brand-100: #d3d7d8;
-  --brand-500: #3d4a4f;
-  --brand-600: #293438;
-  --brand-700: #1f2a2e;
-  --brand-900: #12181b;
+  --brand-50: #edf3ff;
+  --brand-100: #d8e5ff;
+  --brand-200: #b3cbff;
+  --brand-500: #2d6cdf;
+  --brand-600: #1f58c4;
+  --brand-700: #17459c;
+  --brand-900: #0c2350;
 
-  /* Stayfarer terracotta — from stay-farer-logo-v2.svg */
-  --accent-500: #c1633d;
-  --accent-600: #a8532f;
+  --accent-50: #fff1ea;
+  --accent-500: #f2682f;
+  --accent-600: #da5520;
 
-  /* Stayfarer cream / divider — from stay-farer-logo-v2.svg */
-  --sand-50: #f5f1e8;
-  --sand-100: #efe9dc;
-  --sand-200: #e7e4d9;
+  --success-50: #e9f7f0;
+  --success-600: #0e8a5a;
+  --success-700: #0a6e48;
+
+  --sand-50: #f2f4f8;
+  --sand-100: #e9edf3;
+  --sand-200: #dde3ec;
+
+  /* Cards, panels, header — white in light mode. */
+  --surface: #ffffff;
+
+  color-scheme: light;
+}
+
+/*
+ * Dark theme. Applies when the device prefers dark (unless the visitor picked
+ * "Light"), or when they explicitly picked "Dark". Rather than sprinkling
+ * dark: variants everywhere, it re-points the palette the pages already use:
+ * the neutral scales (slate/stone) are inverted so "text-slate-900" stays the
+ * strongest-contrast text and "border-slate-200" stays a subtle line, tints
+ * (brand-50, success-50, red-50…) become deep washes, and brand-700 — the link
+ * colour — turns light. Tailwind v4 utilities read these as CSS variables, so
+ * every page follows without per-component changes.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: #0b1220;
+    --foreground: #e6edf6;
+    --surface: #131c2e;
+
+    --brand-50: #13254d;
+    --brand-100: #1b3163;
+    --brand-200: #2a4a8c;
+    --brand-500: #4b86f0;
+    --brand-600: #2f6fe8;
+    --brand-700: #8ab0ff;
+    --brand-900: #081733;
+
+    --accent-50: #3a1d10;
+    --success-50: #0f2e22;
+    --success-600: #16a06a;
+    --success-700: #4fd49a;
+
+    --sand-50: #0b1220;
+    --sand-100: #1a2336;
+    --sand-200: #243049;
+
+    --color-slate-50: #172033;
+    --color-slate-100: #1c2638;
+    --color-slate-200: #263247;
+    --color-slate-300: #34425c;
+    --color-slate-400: #7c8aa3;
+    --color-slate-500: #94a3b8;
+    --color-slate-600: #b4c0d3;
+    --color-slate-700: #cbd5e1;
+    --color-slate-800: #e2e8f0;
+    --color-slate-900: #f1f5f9;
+    --color-stone-200: #263247;
+    --color-stone-300: #34425c;
+    --color-stone-400: #7c8aa3;
+    --color-stone-500: #94a3b8;
+    --color-stone-600: #b4c0d3;
+    --color-stone-700: #cbd5e1;
+    --color-stone-900: #f1f5f9;
+
+    --color-red-50: #3a1414;
+    --color-red-100: #4a1a1a;
+    --color-red-200: #6b2323;
+    --color-red-600: #f87171;
+    --color-red-700: #fca5a5;
+    --color-red-800: #fecaca;
+    --color-amber-50: #33250b;
+    --color-amber-100: #4a3510;
+    --color-amber-200: #6b4c12;
+    --color-amber-700: #fcd34d;
+    --color-amber-800: #fde68a;
+    --color-amber-900: #fef3c7;
+
+    color-scheme: dark;
+  }
+}
+
+/* Explicit "Dark" choice: same values as above, regardless of the device setting. */
+:root[data-theme="dark"] {
+  --background: #0b1220;
+  --foreground: #e6edf6;
+  --surface: #131c2e;
+
+  --brand-50: #13254d;
+  --brand-100: #1b3163;
+  --brand-200: #2a4a8c;
+  --brand-500: #4b86f0;
+  --brand-600: #2f6fe8;
+  --brand-700: #8ab0ff;
+  --brand-900: #081733;
+
+  --accent-50: #3a1d10;
+  --success-50: #0f2e22;
+  --success-600: #16a06a;
+  --success-700: #4fd49a;
+
+  --sand-50: #0b1220;
+  --sand-100: #1a2336;
+  --sand-200: #243049;
+
+  --color-slate-50: #172033;
+  --color-slate-100: #1c2638;
+  --color-slate-200: #263247;
+  --color-slate-300: #34425c;
+  --color-slate-400: #7c8aa3;
+  --color-slate-500: #94a3b8;
+  --color-slate-600: #b4c0d3;
+  --color-slate-700: #cbd5e1;
+  --color-slate-800: #e2e8f0;
+  --color-slate-900: #f1f5f9;
+  --color-stone-200: #263247;
+  --color-stone-300: #34425c;
+  --color-stone-400: #7c8aa3;
+  --color-stone-500: #94a3b8;
+  --color-stone-600: #b4c0d3;
+  --color-stone-700: #cbd5e1;
+  --color-stone-900: #f1f5f9;
+
+  --color-red-50: #3a1414;
+  --color-red-100: #4a1a1a;
+  --color-red-200: #6b2323;
+  --color-red-600: #f87171;
+  --color-red-700: #fca5a5;
+  --color-red-800: #fecaca;
+  --color-amber-50: #33250b;
+  --color-amber-100: #4a3510;
+  --color-amber-200: #6b4c12;
+  --color-amber-700: #fcd34d;
+  --color-amber-800: #fde68a;
+  --color-amber-900: #fef3c7;
+
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -28,21 +168,28 @@
 
   --color-brand-50: var(--brand-50);
   --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
   --color-brand-500: var(--brand-500);
   --color-brand-600: var(--brand-600);
   --color-brand-700: var(--brand-700);
   --color-brand-900: var(--brand-900);
 
+  --color-accent-50: var(--accent-50);
   --color-accent-500: var(--accent-500);
   --color-accent-600: var(--accent-600);
+
+  --color-success-50: var(--success-50);
+  --color-success-600: var(--success-600);
+  --color-success-700: var(--success-700);
 
   --color-sand-50: var(--sand-50);
   --color-sand-100: var(--sand-100);
   --color-sand-200: var(--sand-200);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-fraunces);
+  --color-surface: var(--surface);
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-inter);
 }
 
 body {
@@ -53,4 +200,18 @@ body {
 ::selection {
   background: var(--brand-100);
   color: var(--brand-900);
+}
+
+/* Hide scrollbars on horizontal chip rows while keeping them scrollable. */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+@media print {
+  header, footer, .no-print { display: none !important; }
+  body { background: #fff; }
+}
+
+/* Smooth the switch when the visitor flips the theme toggle (not on first paint). */
+html.theme-transition, html.theme-transition * {
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease !important;
 }

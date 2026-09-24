@@ -14,7 +14,7 @@ Node.js + Express backend for the [guest-facing web app](../). Handles auth, hot
 
 ```bash
 npm install
-cp .env.example .env   # set DB_HOST/DB_USER/DB_PASSWORD/DB_NAME/JWT_SECRET/PORT
+cp .env.example .env   # set DB_HOST/DB_USER/DB_PASSWORD/DB_NAME/JWT_SECRET/PORT/SEED_*
 npx knex migrate:latest  # run all migrations
 npx knex seed:run         # seed test users and sample hotels
 npm run dev                # starts with nodemon on http://localhost:4000
@@ -148,7 +148,7 @@ seeds/
 ```
 
 ### Seeded data
-- Test users: `guest@example.com` (password123), `admin@example.com` (admin123)
+- Test users: a guest and an admin, with emails/passwords from `SEED_GUEST_EMAIL`, `SEED_GUEST_PASSWORD`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` in `.env`
 - Sample hotels: Coorg Coffee Villa, The Grand Taj, etc.
 - Room types + rate plans + inventory per property
 - Amenities (wifi, pool, gym, etc.)

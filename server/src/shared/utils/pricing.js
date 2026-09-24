@@ -44,4 +44,10 @@ async function calculateBookingPrice({ ratePlanPrice, nights, numRooms = 1, disc
   };
 }
 
-module.exports = { calculateBookingPrice, diffNights };
+/** Taxes + fees on an amount, for "₹X + ₹Y taxes & fees" price displays. */
+async function estimateTaxesAndFees(amount) {
+  const taxes = await getActiveTaxes();
+  return round2(taxes.reduce((sum, tax) => sum + applyTax(Number(amount), tax), 0));
+}
+
+module.exports = { calculateBookingPrice, estimateTaxesAndFees, diffNights };
